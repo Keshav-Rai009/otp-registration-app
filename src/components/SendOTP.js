@@ -7,7 +7,7 @@ import {
   Typography,
   CircularProgress,
 } from "@mui/material";
-
+import { generateOtp, sendEmailOtp, sendSmsOtp } from "../utils/otpsUtil";
 import { useUser } from "../context/UserContext";
 
 function SendOtp({ onOtpSent }) {
@@ -21,16 +21,6 @@ function SendOtp({ onOtpSent }) {
   const [networkError, setNetworkError] = useState("");
 
   const { updateUser } = useUser();
-
-  // EMAILJSL: EMail Provider
-  const SERVICE_ID = "service_xafrl9z";
-  const TEMPLATE_ID = "template_9q0yw5i";
-  const USER_ID = "ZQcFpx8GBt-59-Q_0";
-
-  // TWILIO : SMS PROVIDER
-  const accountSid = "ACed6e83a2d9a5cc0d79eec23705ae1142";
-  const authToken = "889b5aab499a39b7006dbafbf82e6f46";
-  const twilioNumber = "+19542803027";
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phoneRegex = /^[0-9]{12}$/;
@@ -53,62 +43,6 @@ function SendOtp({ onOtpSent }) {
     }
   };
 
-  const sendSmsOtp = async (otp) => {
-    try {
-      const headers = new Headers({
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: "Basic " + btoa(`${accountSid}:${authToken}`),
-      });
-
-      const body = new URLSearchParams({
-        To: "+" + phone,
-        From: twilioNumber,
-        Body: `Your OTP code for verifying your 1Fi account is ${otp}. This code is valid for the next 5 minutes. Please use it to complete your verification process.`,
-      });
-
-      const response = await fetch(
-        "https://api.twilio.com/2010-04-01/Accounts/" +
-          accountSid +
-          "/Messages.json",
-        {
-          method: "POST",
-          headers: headers,
-          body: body.toString(),
-        }
-      );
-
-      const data = await response.json();
-      if (data.error_message) {
-        console.error("Error sending SMS:", data.error_message);
-      } else {
-        console.log("SMS sent successfully:", data);
-      }
-    } catch (error) {
-      console.error("Error sending SMS:", error);
-    }
-  };
-
-  const sendEmailOtp = async (otp) => {
-    // Send OTP via EmailJS
-    try {
-      const templateParams = {
-        from_name: "1Fi",
-        to_email: email,
-        email_otp: otp,
-      };
-
-      console.log(templateParams);
-
-      await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, USER_ID);
-    } catch (error) {
-      console.error("Failed to send OTP:", error);
-    }
-  };
-
-  const generateOtp = () => {
-    return Math.floor(100000 + Math.random() * 900000); // Generate 6-digit OTP
-  };
-
   useEffect(() => {
     if (!phoneError && !emailError && phone && email) {
       setDisableButton(false);
@@ -124,8 +58,8 @@ function SendOtp({ onOtpSent }) {
 
     try {
       setLoading(true);
-      await sendSmsOtp(phoneOtp);
-      await sendEmailOtp(emailOtp);
+      await sendSmsOtp(phone, phoneOtp);
+      await sendEmailOtp(email, emailOtp);
       setDisableButton(true);
       setOtpText("OTPs sent! Taking you to the verification screen.");
       updateUser({

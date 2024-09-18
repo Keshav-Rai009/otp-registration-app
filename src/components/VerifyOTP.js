@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { TextField, Button, Box, Typography, Grid } from "@mui/material";
 import { useUser } from "../context/UserContext";
+import { generateOtp, sendEmailOtp, sendSmsOtp } from "../utils/otpsUtil";
 
-function VerifyOtp() {
+function VerifyOtp(sendOtp) {
   const [phoneOtp, setPhoneOtp] = useState("");
   const [emailOtp, setEmailOtp] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
@@ -27,7 +28,7 @@ function VerifyOtp() {
     ) {
       setStatusMessage("OTP verification successful!");
       setIsVerified(true);
-      handleOtpVerification(true);
+      //handleOtpVerification(true);
 
       // Update verification status in context
       updateUser({
@@ -38,10 +39,6 @@ function VerifyOtp() {
       setStatusMessage("Failed to verify OTPs. Please try again.");
       setIsVerified(false);
     }
-  };
-
-  const generateOtp = () => {
-    return Math.floor(100000 + Math.random() * 900000); // Generate 6-digit OTP
   };
 
   const handleOtpVerification = (isVerified) => {
@@ -57,9 +54,8 @@ function VerifyOtp() {
     }
   };
 
-  const handleResendOtp = () => {
+  const handleResendOtp = async () => {
     if (retry > 0) {
-      console.log(retry);
       setDisableResend(true);
       setRetry(retry - 1);
       setStatusMessage("");
@@ -67,6 +63,9 @@ function VerifyOtp() {
       // Regenerate OTPs and update context
       const newPhoneOtp = generateOtp();
       const newEmailOtp = generateOtp();
+
+      await sendSmsOtp(user.phone, newPhoneOtp);
+      await sendEmailOtp(user.email, newEmailOtp);
 
       updateUser({
         phoneOtp: newPhoneOtp,
