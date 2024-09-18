@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { TextField, Button, Box, Typography, Grid } from "@mui/material";
+import { useUser } from "../context/UserContext"; // Import UserContext to access OTPs
 
-function VerifyOtp({ phone, email }) {
+function VerifyOtp() {
   const [phoneOtp, setPhoneOtp] = useState("");
   const [emailOtp, setEmailOtp] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
@@ -11,86 +12,74 @@ function VerifyOtp({ phone, email }) {
   const [resendMessage, setResendMessage] = useState({
     message: "",
     visible: false,
-  }); // Updated to track visibility
-  const [fadeOut, setFadeOut] = useState(false); // For controlling fade-out effect
+  });
+  const [fadeOut, setFadeOut] = useState(false);
 
-  const handleVerifyOtp = async () => {
-    try {
-      const response = await fetch("/api/auth/verify-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ phone, email, phoneOtp, emailOtp }), // Sending both OTPs in the request
+  // Retrieve user data from UserContext
+  const { user, updateUser } = useUser();
+
+  const handleVerifyOtp = () => {
+    // Compare input OTPs with stored OTPs in context
+    if (
+      phoneOtp === String(user.phoneOtp) &&
+      emailOtp === String(user.emailOtp)
+    ) {
+      setStatusMessage("OTP verification successful!");
+      setVerified(true);
+
+      // Update verification status in context
+      updateUser({
+        emailVerified: true,
+        phoneVerified: true,
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setStatusMessage(data.message);
-        setVerified(true);
-      } else {
-        setVerified(false);
-        setStatusMessage(data.message || "Failed to verify OTPs");
-      }
-    } catch (error) {
+    } else {
+      setStatusMessage("Failed to verify OTPs. Please try again.");
       setVerified(false);
-      setStatusMessage("Error verifying OTPs: " + error.message);
     }
   };
 
-  const handleResendOtp = async () => {
-    setDisableResend(true);
-    setStatusMessage("");
-    setRetry((prev) => prev - 1);
-    if (!retry) {
+  const handleResendOtp = () => {
+    if (retry > 0) {
       setDisableResend(true);
+      setRetry(retry - 1);
+      setStatusMessage("");
+
+      // Regenerate OTPs and update context
+      const newPhoneOtp = Math.floor(1000 + Math.random() * 9000);
+      const newEmailOtp = Math.floor(1000 + Math.random() * 9000);
+
+      updateUser({
+        phoneOtp: newPhoneOtp,
+        emailOtp: newEmailOtp,
+        emailOtpExpiration: new Date(Date.now() + 5 * 60000),
+        phoneOtpExpiration: new Date(Date.now() + 5 * 60000),
+      });
+
       setResendMessage({
-        message: "Max attempts reached. Please try after some time.",
+        message: "OTPs resent successfully.",
         visible: true,
       });
-    }
 
-    setResendMessage({
-      message: "Resending OTPs. Please wait...",
-      visible: true,
-    });
-    setFadeOut(false); // Reset fade-out state
-    try {
-      const response = await fetch("/api/auth/send-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ phone, email }),
-      });
+      setFadeOut(false);
 
-      const data = await response.json();
-      if (data.success) {
-        setResendMessage({
-          message: data.message || "OTP resent successfully.",
-          visible: true,
-        });
-      } else {
-        setResendMessage({ message: "Failed to resend OTPs.", visible: true });
-      }
-
+      // Disable resend for 10 seconds
       setTimeout(() => {
         setDisableResend(false);
       }, 10000);
 
-      // Set timeout for fade-out effect
+      // Fade-out effect for the resend message
       setTimeout(() => {
-        setFadeOut(true); // Trigger fade-out
+        setFadeOut(true);
         setTimeout(() => {
-          setResendMessage({ message: "", visible: false }); // Hide after fade-out
-        }, 500); // Delay to allow the fade-out transition
-      }, 5000); // Show for 5 seconds
-    } catch (error) {
+          setResendMessage({ message: "", visible: false });
+        }, 500);
+      }, 5000);
+    } else {
       setResendMessage({
-        message: "Error resending OTPs: " + error.message,
+        message: "Max attempts reached. Please try again later.",
         visible: true,
       });
+      setDisableResend(true);
     }
   };
 
@@ -160,13 +149,14 @@ function VerifyOtp({ phone, email }) {
           {statusMessage}
         </Typography>
       )}
+
       {/* Resend message with transition */}
       {resendMessage.visible && (
         <Typography
           sx={{
             mt: 2,
-            opacity: fadeOut ? 0 : 1, // Control opacity
-            transition: "opacity 1s ease-in-out", // Smooth fade transition
+            opacity: fadeOut ? 0 : 1,
+            transition: "opacity 1s ease-in-out",
             color: "green",
             textAlign: "center",
           }}

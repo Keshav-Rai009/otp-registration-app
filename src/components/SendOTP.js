@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { TextField, Button, Box, Typography } from "@mui/material";
+import { useUser } from "../context/UserContext"; // Import UserContext to access OTPs
 
 function SendOtp({ onOtpSent }) {
   const [email, setEmail] = useState("");
@@ -10,15 +11,14 @@ function SendOtp({ onOtpSent }) {
   const [otpBtnText, setOtpBtnText] = useState("Send OTP");
   const [disableButton, setDisableButton] = useState(true);
 
-  const generateOtp = () => {
-    return Math.floor(1000 + Math.random() * 9000); // 4-digit OTP
-  };
+  // Get user data and update function from UserContext
+  const { user, updateUser } = useUser();
 
   // Email validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   // Phone validation regex (10 digits)
-  const phoneRegex = /^[0-9]{12}$/;
+  const phoneRegex = /^[0-9]{10}$/;
 
   useEffect(() => {
     if (!phoneError && !emailError && phone && email) {
@@ -46,30 +46,37 @@ function SendOtp({ onOtpSent }) {
     }
   };
 
-  const handleSendOtp = async () => {
-    // set India by default
+  const generateOtp = () => {
+    return Math.floor(1000 + Math.random() * 9000); // Generate 4-digit OTP
+  };
+
+  const handleSendOtp = () => {
+    // Set India country code by default if it's a 10-digit number
     if (phone.length === 10) {
       setPhone("91" + phone);
     }
-    try {
-      setOtpText("Sending OTPs. Please wait...");
-      const response = await fetch("/api/auth/send-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, phone }),
-      });
-      const data = await response.json();
-      if (data?.success) {
-        setOtpBtnText("Resend OTP");
-        setOtpText("OTPs sent successfully! Verify using the next screen.");
-        onOtpSent({ email, phone });
-      }
-      alert(data.message);
-    } catch (error) {
-      alert(error);
-    }
+
+    // Generate OTP for phone and email
+    const phoneOtp = generateOtp();
+    const emailOtp = generateOtp();
+
+    // Set OTPs in context
+    updateUser({
+      email,
+      phone,
+      emailOtp,
+      phoneOtp,
+      emailVerified: false,
+      phoneVerified: false,
+      emailOtpExpiration: new Date(Date.now() + 5 * 60000), // Expire OTP in 5 mins
+      phoneOtpExpiration: new Date(Date.now() + 5 * 60000), // Expire OTP in 5 mins
+    });
+
+    setOtpBtnText("Resend OTP");
+    setOtpText("OTPs generated successfully! Verify using the next screen.");
+
+    // Inform parent component OTP is sent
+    onOtpSent({ email, phone });
   };
 
   return (
@@ -91,9 +98,7 @@ function SendOtp({ onOtpSent }) {
         onChange={(e) => handlePhone(e.target.value)}
         error={phoneError} // Triggers red border if error is true
         helperText={
-          phoneError
-            ? "Please enter a valid 10-digit phone number with country code"
-            : ""
+          phoneError ? "Please enter a valid 10-digit phone number" : ""
         } // Error message
         sx={{ mb: 2 }}
       />

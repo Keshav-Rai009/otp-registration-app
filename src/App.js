@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import SendOtp from "./components/SendOTP";
 import VerifyOtp from "./components/VerifyOTP";
+import { UserProvider } from "./context/UserContext";
 
 function App() {
   const [step, setStep] = useState("sendOtp");
@@ -12,12 +13,12 @@ function App() {
   };
 
   return (
-    <>
+    <UserProvider>
       {step === "sendOtp" && <SendOtp onOtpSent={handleOtpSent} />}
       {step === "verifyOtp" && (
         <VerifyOtp email={userDetails.email} phone={userDetails.phone} />
       )}
-    </>
+    </UserProvider>
   );
 }
 
