@@ -17,8 +17,7 @@ function SendOtp({ onOtpSent }) {
   // Email validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // Phone validation regex (10 digits)
-  const phoneRegex = /^[0-9]{10}$/;
+  const phoneRegex = /^[0-9]{12}$/;
 
   useEffect(() => {
     if (!phoneError && !emailError && phone && email) {
