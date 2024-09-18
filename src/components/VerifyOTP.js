@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { TextField, Button, Box, Typography, Grid } from "@mui/material";
-import { useUser } from "../context/UserContext"; // Import UserContext to access OTPs
+import { useUser } from "../context/UserContext";
 
 function VerifyOtp() {
   const [phoneOtp, setPhoneOtp] = useState("");
