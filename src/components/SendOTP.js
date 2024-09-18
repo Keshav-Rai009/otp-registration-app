@@ -124,8 +124,8 @@ function SendOtp({ onOtpSent }) {
 
     try {
       setLoading(true);
-      //await sendSmsOtp(phoneOtp);
-      await sendEmailOtp(phone, emailOtp);
+      await sendSmsOtp(phoneOtp);
+      await sendEmailOtp(emailOtp);
       setDisableButton(true);
       setOtpText("OTPs sent! Taking you to the verification screen.");
       updateUser({
@@ -167,7 +167,7 @@ function SendOtp({ onOtpSent }) {
         error={phoneError}
         helperText={
           phoneError
-            ? "Please enter a valid 12-digit phone number including country code"
+            ? "Please enter a valid 10-digit phone number with country code"
             : ""
         }
         sx={{ mb: 2 }}
