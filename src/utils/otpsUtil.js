@@ -53,8 +53,6 @@ export const sendEmailOtp = async (email, otp) => {
       email_otp: otp,
     };
 
-    console.log(templateParams);
-
     await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, USER_ID);
   } catch (error) {
     console.error("Failed to send Email OTP:", error);

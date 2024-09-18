@@ -28,6 +28,9 @@ function VerifyOtp(sendOtp) {
     ) {
       setStatusMessage("OTP verification successful!");
       setIsVerified(true);
+      setDisableResend(true);
+      setPhoneOtp("");
+      setEmailOtp("");
       //handleOtpVerification(true);
 
       // Update verification status in context
