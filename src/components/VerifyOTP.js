@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import { TextField, Button, Box, Typography, Grid } from "@mui/material";
 import { useUser } from "../context/UserContext"; // Import UserContext to access OTPs
 
@@ -6,7 +6,7 @@ function VerifyOtp() {
   const [phoneOtp, setPhoneOtp] = useState("");
   const [emailOtp, setEmailOtp] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
-  const [verified, setVerified] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const [retry, setRetry] = useState(2);
   const [disableResend, setDisableResend] = useState(false);
   const [resendMessage, setResendMessage] = useState({
@@ -17,6 +17,7 @@ function VerifyOtp() {
 
   // Retrieve user data from UserContext
   const { user, updateUser } = useUser();
+  console.log(user);
 
   const handleVerifyOtp = () => {
     // Compare input OTPs with stored OTPs in context
@@ -25,7 +26,8 @@ function VerifyOtp() {
       emailOtp === String(user.emailOtp)
     ) {
       setStatusMessage("OTP verification successful!");
-      setVerified(true);
+      setIsVerified(true);
+      handleOtpVerification(true);
 
       // Update verification status in context
       updateUser({
@@ -34,19 +36,37 @@ function VerifyOtp() {
       });
     } else {
       setStatusMessage("Failed to verify OTPs. Please try again.");
-      setVerified(false);
+      setIsVerified(false);
+    }
+  };
+
+  const generateOtp = () => {
+    return Math.floor(100000 + Math.random() * 900000); // Generate 6-digit OTP
+  };
+
+  const handleOtpVerification = (isVerified) => {
+    if (isVerified) {
+      alert("Verification successful! Exiting the app...");
+
+      // For Web
+      if (typeof window !== "undefined") {
+        window.close();
+      }
+    } else {
+      alert("OTP verification failed. Please try again.");
     }
   };
 
   const handleResendOtp = () => {
     if (retry > 0) {
+      console.log(retry);
       setDisableResend(true);
       setRetry(retry - 1);
       setStatusMessage("");
 
       // Regenerate OTPs and update context
-      const newPhoneOtp = Math.floor(1000 + Math.random() * 9000);
-      const newEmailOtp = Math.floor(1000 + Math.random() * 9000);
+      const newPhoneOtp = generateOtp();
+      const newEmailOtp = generateOtp();
 
       updateUser({
         phoneOtp: newPhoneOtp,
@@ -75,10 +95,13 @@ function VerifyOtp() {
         }, 500);
       }, 5000);
     } else {
-      setResendMessage({
-        message: "Max attempts reached. Please try again later.",
-        visible: true,
-      });
+      setTimeout(() => {
+        setResendMessage({
+          message: "Max attempts reached. Please try later.",
+          visible: true,
+        });
+      }, 0);
+      setStatusMessage("Max attempts reached. Please try later.");
       setDisableResend(true);
     }
   };
@@ -144,7 +167,11 @@ function VerifyOtp() {
       {/* Status Messages */}
       {statusMessage && (
         <Typography
-          sx={{ mt: 2, color: verified ? "green" : "red", textAlign: "center" }}
+          sx={{
+            mt: 2,
+            color: isVerified ? "green" : "red",
+            textAlign: "center",
+          }}
         >
           {statusMessage}
         </Typography>
